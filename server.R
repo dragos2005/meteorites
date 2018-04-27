@@ -6,50 +6,136 @@ shinyServer(function(input, output, session){
   
   conn = dbConnector(session, dbname = dbname)
   
-  classes = (dbGetQuery(conn, statement = paste("SELECT DISTINCT(CLASS) FROM", tablename)))
+  classes = (dbGetQuery(conn, statement = paste("SELECT DISTINCT(CLASS) FROM", tablename)))[[1]]
   
-  pal = colorFactor(palette = "Spectral", domain = classes[[1]])
+  pal = colorFactor(palette = "Spectral", domain = classes)
+  
+  observe ({
+    updateCheckboxGroupInput(session, "class",
+                      choices = classes,
+                      selected = classes
+    )
+  })
+  
+  # observe ({
+  #   if(input$tabs == "map"){
+  #     updateSliderInput(session, "year",
+  #                                   label = "Year",
+  #                                   min = 1800,
+  #                                   max = 2020,
+  #                                   value = c(1800, 2020),
+  #                                   round = TRUE,
+  #                                   sep = '',
+  #                                   animate = animationOptions(interval = 200,
+  #                                                              playButton = HTML("<h4>Play</h4>")))
+  #   } else {
+  #     updateSliderInput(session, "year",
+  #                                   label = "Year",
+  #                                   min = 1800,
+  #                                   max = 2020,
+  #                                   value = c(1800, 2020),
+  #                                   round = TRUE,
+  #                                   sep = '',
+  #                                   animate = FALSE)
+  #   }
+  # })
+  
+  # output$slider = renderUI({
+  #   if(input$tabs == "map"){
+  #       
+  #   } else {
+  #       
+  #   }
+  # })
   
   dfm = reactive({
+    if(length(input$year) == 0) {
+      yearstart = 1800
+      yearend = 2020
+    } else {
+      yearstart = input$year[1]
+      yearend = input$year[2]
+    }
     dbGetData(conn = conn,
-                  tblname = tablename,
-                  yearstart = input$year[1],
-                  yearend = input$year[2],
-                  massstart = 1,#input$mass[1],
-                  massend = 1000000,#input$mass[2],
-                  class = input$class)
+              tblname = tablename,
+              yearstart = yearstart,
+              yearend = yearend,
+              massstart = 1,#input$mass[1],
+              massend = 1000000,#input$mass[2],
+              class = input$class,
+              fall = input$fall) %>% 
+      group_by(groupname) %>% 
+      mutate(groupmass = sum(mass))
+  })
+  
+  dfmgroups = reactive({
+    if(length(input$year) == 0) {
+      yearstart = 1800
+      yearend = 2020
+    } else {
+      yearstart = input$year[1]
+      yearend = input$year[2]
+    }
+    dbGetData(conn = conn,
+              tblname = tablename,
+              yearstart = yearstart,
+              yearend = yearend,
+              massstart = 1,#input$mass[1],
+              massend = 1000000,#input$mass[2],
+              class = input$class,
+              fall = input$fall) %>% 
+      group_by(groupname) %>% 
+      mutate(groupmass = sum(mass)) %>% 
+      filter(mass == max(mass))
   })
   
   # show map using leaflet
   output$map = renderLeaflet({
     leaflet() %>%
       addProviderTiles("Esri.WorldStreetMap") %>% 
-      setView(0,0,zoom=1.5)
+      setView(0,0,zoom=2)
   })
   
-  observeEvent(input$year,{
-    proxy = leafletProxy("map", data = dfm())
-    labs = lapply(seq(nrow(dfm())), function(i) {
-      paste(  dfm()[i, "name"], '<br>',
-              dfm()[i, "class"], '<br>',
-              as.integer(dfm()[i, "mass"])/1000,'kg' )
-    })
-    proxy %>%
-      clearMarkers() %>% 
-      addCircleMarkers(~reclong, ~reclat,
-                       radius = ~ 0.1*mass^0.333,
-                       label = lapply(labs, HTML),
-                       color = ~ pal(class),
-                       opacity = 1,
-                       fillOpacity = 0.5)
+  observe({
+    if(input$tabs == "map"){
+      if(!is.null(input$map_zoom)){
+        if(input$map_zoom > 6)
+          df = dfm()
+        else
+          df = dfmgroups()
+      } else {
+        df = dfmgroups()
+      }
+      proxy = leafletProxy("map", data = df)
+      # labs = lapply(seq(nrow(dfmgroups())), function(i) {
+      #   paste(  dfmgroups()[i, "groupname"], '<br>',
+      #           dfmgroups()[i, "class"], '<br>',
+      #           as.integer(dfmgroups()[i, "groupmass"])/1000,'kg' )
+      # })
+      proxy %>%
+        clearMarkers() %>% 
+        addCircleMarkers(~reclong, ~reclat,
+                         radius = ~ 0.1*groupmass^0.333,
+                         label = ~ paste0(groupname, ', ', class, ', ', as.integer(groupmass)/1000,' kg'),
+                         color = ~ pal(class),
+                         weight = 1,
+                         opacity = 1,
+                         fillOpacity = 0.2)
+    }
   })
+  
+  # observeEvent(input$map_zoom,{
+  #   proxy = leafletProxy("map")
+  #   if(input$zoom > 5)
+  # })
 
   output$hist = renderPlot({
-    dfm() %>% 
-      #head(50000) %>% 
-      ggplot(aes(x = year)) + 
-      geom_histogram(aes(fill = class), position = 'stack', binwidth = 1) +
-      xlim(input$year[1],input$year[2])
+    if(input$tabs == 'hist'){
+      dfm() %>% 
+        ggplot(aes(x = year)) + 
+        geom_histogram(aes(fill = class), position = 'stack', binwidth = 1) +
+        xlim(input$year[1],input$year[2])
+    }
   })
   
   # show data using DataTable

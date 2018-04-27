@@ -22,11 +22,13 @@ dbConnector <- function(session, dbname) {
   conn
 }
 
-dbGetData = function(conn, tblname, yearstart, yearend, massstart, massend, class) {
+dbGetData = function(conn, tblname, yearstart, yearend, massstart, massend, class, fall) {
   query = paste("SELECT * FROM", tblname, "WHERE",
                 "year BETWEEN", yearstart, "AND", yearend, "AND",
                 "mass BETWEEN", massstart, "AND", massend, "AND",
-                "class IN (", paste0("'", class, "'", collapse=","), ")")
+                "class IN (", paste0("'", class, "'", collapse=","), ")", "AND",
+                "fall IN (", paste0("'", fall, "'", collapse=","), ")")
   as.data.frame(dbGetQuery(conn = conn,
                            statement = query))
 }
+

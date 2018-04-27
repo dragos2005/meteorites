@@ -42,7 +42,12 @@ dfm = dfm %>%
                          )
                        )
                      )
-                   ))
+                   )) %>% 
+      filter(year>=1800 & year<=2016) %>% 
+      filter(reclong<=180 & reclong>=-180 & (reclat!=0 | reclong!=0)) %>% 
+      mutate(groupname = gsub('[0-9]+', '', name))
+
+
 
 ## connect to database
 conn <- dbConnect(drv = SQLite(), 
