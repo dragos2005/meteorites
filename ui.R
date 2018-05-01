@@ -46,10 +46,11 @@ shinyUI(
                        choices = "",
                        selected = 'Pallasite'
                        ),
-        checkboxGroupInput(inputId = "fall",
-                           label = "Fall",
-                           choices = c("Seen falling" = 'Fell',"Found on the ground" = 'Found'),
-                           selected = c("Fell","Found")),
+        actionLink("selectall","Select All"),
+        # checkboxGroupInput(inputId = "fall",
+        #                    label = "Fall",
+        #                    choices = c("Seen falling" = 'Fell',"Found on the ground" = 'Found'),
+        #                    selected = c("Fell","Found")),
         sliderInput(inputId = "year",
                     label = "Year",
                     min = 1800,
@@ -68,9 +69,9 @@ shinyUI(
       )
     ),
     dashboardBody(
-      tags$head(
-        tags$link(rel = "stylesheet", type = "text/css", href = "custom.css")
-      ),
+      # tags$head(
+      #   tags$link(rel = "stylesheet", type = "text/css", href = "custom.css")
+      # ),
       tabItems(
         tabItem(
           tabName = 'map',

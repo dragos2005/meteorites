@@ -10,7 +10,7 @@ dbname = './meteorites-sqlite'
 tablename = 'meteorites'
 
 dbConnector <- function(session, dbname) {
-  require(RSQLite)
+
   ## setup connection to database
   conn <- dbConnect(drv = SQLite(), 
                     dbname = dbname)

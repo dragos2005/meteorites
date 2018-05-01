@@ -10,20 +10,41 @@ shinyServer(function(input, output, session){
   
   pal = colorFactor(palette = "Spectral", domain = classes)
   
+  # ids = c()
+  
   observe ({
     updateCheckboxGroupInput(session, "class",
                       choices = classes,
-                      selected = classes
+                      selected = 0
     )
+  })
+  
+  observe({
+    if(input$selectall == 0) return(NULL) 
+    else if (input$selectall%%2 == 0)
+    {
+      updateCheckboxGroupInput(session,"class",choices=classes)
+    }
+    else
+    {
+      updateCheckboxGroupInput(session,"class",choices=classes,selected=classes)
+    }
   })
   
   # observe ({
   #   if(input$tabs == "map"){
+  #     if(length(input$year) == 0) {
+  #       yearstart = 1800
+  #       yearend = 2020
+  #     } else {
+  #       yearstart = input$year[1]
+  #       yearend = input$year[2]
+  #     }
   #     updateSliderInput(session, "year",
   #                                   label = "Year",
-  #                                   min = 1800,
-  #                                   max = 2020,
-  #                                   value = c(1800, 2020),
+  #                                   min = yearstart,
+  #                                   max = yearend,
+  #                                   value = c(yearstart, yearend),
   #                                   round = TRUE,
   #                                   sep = '',
   #                                   animate = animationOptions(interval = 200,
@@ -31,9 +52,9 @@ shinyServer(function(input, output, session){
   #   } else {
   #     updateSliderInput(session, "year",
   #                                   label = "Year",
-  #                                   min = 1800,
-  #                                   max = 2020,
-  #                                   value = c(1800, 2020),
+  #                                   min = yearstart,
+  #                                   max = yearend,
+  #                                   value = c(yearstart, yearend),
   #                                   round = TRUE,
   #                                   sep = '',
   #                                   animate = FALSE)
@@ -63,7 +84,7 @@ shinyServer(function(input, output, session){
               massstart = 1,#input$mass[1],
               massend = 1000000,#input$mass[2],
               class = input$class,
-              fall = input$fall) %>% 
+              fall = c('Fell','Found')) %>% 
       group_by(groupname) %>% 
       mutate(groupmass = sum(mass))
   })
@@ -83,7 +104,7 @@ shinyServer(function(input, output, session){
               massstart = 1,#input$mass[1],
               massend = 1000000,#input$mass[2],
               class = input$class,
-              fall = input$fall) %>% 
+              fall = c('Fell','Found')) %>% 
       group_by(groupname) %>% 
       mutate(groupmass = sum(mass)) %>% 
       filter(mass == max(mass))
@@ -112,10 +133,19 @@ shinyServer(function(input, output, session){
       #           dfmgroups()[i, "class"], '<br>',
       #           as.integer(dfmgroups()[i, "groupmass"])/1000,'kg' )
       # })
+      # newids = df[,'id']
+      # if (is.null(ids)) {
+      #   addids = newids
+      # } else {
+      #   addids = newids[-which(newids %in% ids)]
+      # }
+      # removeids = ids[-which(ids %in% newids)]
+      # ids = newids
       proxy %>%
         clearMarkers() %>% 
         addCircleMarkers(~reclong, ~reclat,
                          radius = ~ 0.1*groupmass^0.333,
+                         # layerId = addids,
                          label = ~ paste0(groupname, ', ', class, ', ', as.integer(groupmass)/1000,' kg'),
                          color = ~ pal(class),
                          weight = 1,
