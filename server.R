@@ -10,8 +10,9 @@ shinyServer(function(input, output, session){
   
   pal = colorFactor(palette = "Spectral", domain = classes)
   
-  # ids = c()
+  # ids = as.character(c())
   
+  # initial checkbox values
   observe ({
     updateCheckboxGroupInput(session, "class",
                       choices = classes,
@@ -19,6 +20,7 @@ shinyServer(function(input, output, session){
     )
   })
   
+  # select all button
   observe({
     if(input$selectall == 0) return(NULL) 
     else if (input$selectall%%2 == 0)
@@ -69,6 +71,7 @@ shinyServer(function(input, output, session){
   #   }
   # })
   
+  # dataframe not grouped into mass groups
   dfm = reactive({
     if(length(input$year) == 0) {
       yearstart = 1800
@@ -84,11 +87,12 @@ shinyServer(function(input, output, session){
               massstart = 1,#input$mass[1],
               massend = 1000000,#input$mass[2],
               class = input$class,
-              fall = c('Fell','Found')) %>% 
+              fall = input$fall) %>% 
       group_by(groupname) %>% 
       mutate(groupmass = sum(mass))
   })
   
+  # dataframe grouped into mass groups
   dfmgroups = reactive({
     if(length(input$year) == 0) {
       yearstart = 1800
@@ -104,7 +108,7 @@ shinyServer(function(input, output, session){
               massstart = 1,#input$mass[1],
               massend = 1000000,#input$mass[2],
               class = input$class,
-              fall = c('Fell','Found')) %>% 
+              fall = input$fall) %>% 
       group_by(groupname) %>% 
       mutate(groupmass = sum(mass)) %>% 
       filter(mass == max(mass))
@@ -113,10 +117,11 @@ shinyServer(function(input, output, session){
   # show map using leaflet
   output$map = renderLeaflet({
     leaflet() %>%
-      addProviderTiles("Esri.WorldStreetMap") %>% 
+      addProviderTiles("CartoDB.DarkMatter") %>% 
       setView(0,0,zoom=2)
   })
   
+  # change map when input changes
   observe({
     if(input$tabs == "map"){
       if(!is.null(input$map_zoom)){
@@ -127,30 +132,40 @@ shinyServer(function(input, output, session){
       } else {
         df = dfmgroups()
       }
+      # df$id = as.character(df$id)
+      # df = df %>% 
+      #   mutate(id1 = 100000+)
       proxy = leafletProxy("map", data = df)
       # labs = lapply(seq(nrow(dfmgroups())), function(i) {
       #   paste(  dfmgroups()[i, "groupname"], '<br>',
       #           dfmgroups()[i, "class"], '<br>',
       #           as.integer(dfmgroups()[i, "groupmass"])/1000,'kg' )
       # })
-      # newids = df[,'id']
-      # if (is.null(ids)) {
+      # newids = as.character(df$id)
+      # if (length(ids) == 0) {
       #   addids = newids
       # } else {
-      #   addids = newids[-which(newids %in% ids)]
+      #   addids = newids[!(newids %in% ids)]
       # }
-      # removeids = ids[-which(ids %in% newids)]
+      # if (length(newids) == 0) {
+      #   removeids = ids
+      # } else {
+      #   removeids = ids[!(ids %in% newids)]
+      # }
       # ids = newids
+      # addids = df$id
+      # dfadd = df[df$id %in% addids,]
       proxy %>%
         clearMarkers() %>% 
-        addCircleMarkers(~reclong, ~reclat,
-                         radius = ~ 0.1*groupmass^0.333,
-                         # layerId = addids,
-                         label = ~ paste0(groupname, ', ', class, ', ', as.integer(groupmass)/1000,' kg'),
-                         color = ~ pal(class),
+        addCircleMarkers(df$reclong, df$reclat,
+                         radius = 0.1*df$groupmass^0.333,
+                         # layerId = as.character(dfadd$id),
+                         label = paste0(df$groupname, ', ', df$class, ', ', as.integer(df$groupmass)/1000,' kg'),
+                         color = pal(df$class),
                          weight = 1,
                          opacity = 1,
-                         fillOpacity = 0.2)
+                         fillOpacity = 0.2) # %>%
+        # removeMarker(layerId = removeids)
     }
   })
   
@@ -158,7 +173,8 @@ shinyServer(function(input, output, session){
   #   proxy = leafletProxy("map")
   #   if(input$zoom > 5)
   # })
-
+  
+  # render histogram
   output$hist = renderPlot({
     if(input$tabs == 'hist'){
       dfm() %>% 
@@ -171,7 +187,7 @@ shinyServer(function(input, output, session){
   # show data using DataTable
   output$table = DT::renderDataTable({
     dfm() %>% 
-      select(Name = name, ID = id, Class = class, 'Mass (grams)' = mass, Year = year, GeoLocation) %>% 
+      select('Group Name' = groupname, Name = name, ID = id, Class = class, 'Mass (grams)' = mass, Year = year, GeoLocation) %>% 
       datatable(rownames=FALSE) #%>% 
       #formatStyle(input$selected, background="skyblue", fontWeight='bold')
   })

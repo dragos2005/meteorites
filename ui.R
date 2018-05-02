@@ -34,7 +34,20 @@ shinyUI(
                                     font-size: 12px;
                                     margin: 5px;
                                   }
-                                  '))),
+                                  .content-wrapper {
+                                    background-color: #333;
+                                  }
+                                  .leaflet-container {
+                                    background: #666;
+                                  }
+                                  .box, .box-body {
+
+                                    background:#999;
+                                    border-bottom-color:#999;
+                                    border-left-color:#666;
+                                    border-right-color:#666;
+                                    border-top-color:#666;
+                                  }'))),
         # tags$head(tags$script(HTML(JS.logify))),
         # tags$head(tags$script(HTML(JS.onload))),
         id = "tabs",
@@ -47,10 +60,6 @@ shinyUI(
                        selected = 'Pallasite'
                        ),
         actionLink("selectall","Select All"),
-        # checkboxGroupInput(inputId = "fall",
-        #                    label = "Fall",
-        #                    choices = c("Seen falling" = 'Fell',"Found on the ground" = 'Found'),
-        #                    selected = c("Fell","Found")),
         sliderInput(inputId = "year",
                     label = "Year",
                     min = 1800,
@@ -59,7 +68,11 @@ shinyUI(
                     round = TRUE,
                     sep = '',
                     animate = animationOptions(interval = 200,
-                                               playButton = HTML("<h4>Play</h4>")))
+                                               playButton = HTML("<h4>Play</h4>"))),
+        checkboxGroupInput(inputId = "fall",
+                           label = "Fall",
+                           choices = c("Seen falling" = 'Fell',"Found on the ground" = 'Found'),
+                           selected = c("Fell"))
         # sliderInput(inputId = "mass",
         #             label = "Mass",
         #             min = -1,
@@ -69,6 +82,7 @@ shinyUI(
       )
     ),
     dashboardBody(
+      # color = "blue",
       # tags$head(
       #   tags$link(rel = "stylesheet", type = "text/css", href = "custom.css")
       # ),
